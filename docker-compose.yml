@@ -1,0 +1,29 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: colaboshop
+    ports: ['5432:5432']
+  redis:
+    image: redis:7
+    ports: ['6379:6379']
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file: .env.example
+    depends_on: [postgres, redis]
+    ports: ['3000:3000']
+  platform-web:
+    build:
+      context: .
+      dockerfile: apps/platform-web/Dockerfile
+    ports: ['5173:5173']
+  admin-web:
+    build:
+      context: .
+      dockerfile: apps/admin-web/Dockerfile
+    ports: ['5174:5173']
