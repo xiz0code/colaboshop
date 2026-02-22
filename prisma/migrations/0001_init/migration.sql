@@ -1,0 +1,2 @@
+-- Initial migration placeholder for ColaboShop.
+-- Run `npx prisma migrate dev --name init` to regenerate SQL from schema.prisma.

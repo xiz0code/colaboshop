@@ -1,0 +1,30 @@
+### PLATFORM AUTH
+POST http://localhost:3000/api/platform/auth/google
+Content-Type: application/json
+
+{"idToken":"token"}
+
+### CREATE WORKSPACE
+POST http://localhost:3000/api/platform/workspaces
+Content-Type: application/json
+
+{"name":"ColaboStore Centro","adminEmail":"admin@demo.cl","planId":"PLAN_ID"}
+
+### CREATE VENDOR
+POST http://localhost:3000/api/workspace/vendor-stores
+Content-Type: application/json
+x-workspace-id: seed-workspace
+x-user-workspace-id: seed-workspace
+
+{"name":"Vendor Uno"}
+
+### CREATE SALE
+POST http://localhost:3000/api/workspace/sales
+Content-Type: application/json
+x-workspace-id: seed-workspace
+x-user-workspace-id: seed-workspace
+
+{"paymentMethod":"CARD","items":[{"productId":"prod-id","quantity":1}]}
+
+### PUBLIC SUMMARY
+GET http://localhost:3000/api/public/vendor/TOKEN/summary

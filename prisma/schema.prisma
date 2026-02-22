@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkspaceStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum WorkspaceRole {
+  WORKSPACE_ADMIN
+  CASHIER
+  VIEWER
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+}
+
+enum InventoryMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+model PlatformAdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  googleSub    String   @unique
+  createdAt    DateTime @default(now())
+}
+
+model Plan {
+  id                       String   @id @default(cuid())
+  code                     String   @unique
+  name                     String
+  maxVendors               Int
+  maxProducts              Int
+  maxUsers                 Int
+  dailyEmailReportsEnabled Boolean  @default(false)
+  exportsEnabled           Boolean  @default(false)
+  customCommissionEnabled  Boolean  @default(false)
+  multiLocationEnabled     Boolean  @default(false)
+  customBrandingEnabled    Boolean  @default(false)
+  createdAt                DateTime @default(now())
+  workspaces               Workspace[]
+}
+
+model Workspace {
+  id             String          @id @default(cuid())
+  name           String
+  legalName      String?
+  rut            String?
+  adminEmail     String
+  timezone       String          @default("America/Santiago")
+  closeHour      Int             @default(22)
+  status         WorkspaceStatus @default(ACTIVE)
+  planId         String
+  plan           Plan            @relation(fields: [planId], references: [id])
+  createdAt      DateTime        @default(now())
+  users          WorkspaceUser[]
+  vendorStores   VendorStore[]
+  products       Product[]
+  sales          Sale[]
+  subscriptions  Subscription[]
+  commission     CommissionConfig?
+  dailyReportLog DailyReportLog[]
+  auditLogs      AuditLog[]
+}
+
+model WorkspaceUser {
+  id          String        @id @default(cuid())
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id])
+  role        WorkspaceRole
+  email       String
+  name        String?
+  googleSub   String        @unique
+  createdAt   DateTime      @default(now())
+
+  @@unique([workspaceId, email])
+}
+
+model Subscription {
+  id                 String   @id @default(cuid())
+  workspaceId        String
+  workspace          Workspace @relation(fields: [workspaceId], references: [id])
+  planId             String
+  status             String
+  paidAt             DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  stripeCustomerId   String?
+  stripeSubId        String?
+}
+
+model VendorStore {
+  id                    String   @id @default(cuid())
+  workspaceId           String
+  workspace             Workspace @relation(fields: [workspaceId], references: [id])
+  name                  String
+  rut                   String?
+  email                 String?
+  phone                 String?
+  address               String?
+  status                String   @default("ACTIVE")
+  publicToken           String   @unique
+  commissionOverridePct Decimal?
+  createdAt             DateTime @default(now())
+  products              Product[]
+  salesItems            SaleItem[]
+
+  @@index([workspaceId])
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id])
+  vendorStoreId String
+  vendorStore  VendorStore @relation(fields: [vendorStoreId], references: [id])
+  name         String
+  sku          String?
+  price        Decimal
+  cost         Decimal?
+  description  String?
+  status       String   @default("ACTIVE")
+  barcodeValue String   @unique
+  stock        Int      @default(0)
+  createdAt    DateTime @default(now())
+  saleItems    SaleItem[]
+  inventoryMovements InventoryMovement[]
+
+  @@unique([workspaceId, barcodeValue])
+}
+
+model InventoryMovement {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  productId     String
+  vendorStoreId String
+  type          InventoryMovementType
+  quantity      Int
+  reason        String
+  createdBy     String
+  createdAt     DateTime @default(now())
+  product       Product  @relation(fields: [productId], references: [id])
+
+  @@index([workspaceId, productId])
+}
+
+model Sale {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+  paymentMethod PaymentMethod
+  total         Decimal
+  totalCommission Decimal @default(0)
+  netTotal      Decimal
+  createdBy     String
+  createdAt     DateTime @default(now())
+  items         SaleItem[]
+
+  @@index([workspaceId, createdAt])
+}
+
+model SaleItem {
+  id             String   @id @default(cuid())
+  saleId         String
+  sale           Sale     @relation(fields: [saleId], references: [id])
+  workspaceId    String
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id])
+  vendorStoreId  String
+  vendorStore    VendorStore @relation(fields: [vendorStoreId], references: [id])
+  quantity       Int
+  unitPrice      Decimal
+  subtotal       Decimal
+  commission     Decimal @default(0)
+  net            Decimal
+}
+
+model CommissionConfig {
+  id                 String   @id @default(cuid())
+  workspaceId        String   @unique
+  workspace          Workspace @relation(fields: [workspaceId], references: [id])
+  cardCommissionType String   @default("PERCENT")
+  cardCommissionValue Decimal @default(0)
+}
+
+model DailyReportLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  reportDate  DateTime
+  status      String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  actorUserId String
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+}

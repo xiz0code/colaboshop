@@ -1,0 +1,21 @@
+{
+  "name": "colaboshop",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run -ws build",
+    "dev": "npm run -w apps/api start:dev",
+    "test": "npm run -w apps/api test",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "prisma": "^5.15.1",
+    "tsx": "^4.15.7",
+    "typescript": "^5.4.5"
+  }
+}
